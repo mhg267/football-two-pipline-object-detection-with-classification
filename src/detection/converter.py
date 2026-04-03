@@ -1,26 +1,14 @@
 import os
-import cv2
 import json
 import shutil
+import cv2
 
-from torch.utils.data import Dataset
 
 
-class FootballConverter(Dataset):
-    def __init__(self, path, mode=None, transform=None):
-        self.path = path
-        self.transform = transform
 
-        if mode == "train":
-            self.path = os.path.join(path, "football_train")
-        elif mode == "val":
-            self.path = os.path.join(path, "football_val")
-        elif mode == "test":
-            self.path = os.path.join(path, "football_test")
-        elif mode is None:
-            print("None Mode")
-        else:
-            print("Wrong format!")
+class FootballConverter:
+    def __init__(self, path, mode):
+        self.path = os.path.join(path, mode)
 
         img_output_folder = os.path.join(self.path, "images")
         label_output_folder = os.path.join(self.path, "labels")
@@ -89,41 +77,4 @@ class FootballConverter(Dataset):
                         elif item["category_id"] == 3:
                             class_id = 1
 
-                        f.write(f"{class_id} {xcent:.6f} {ycent:.6f} {width:.6f} {height:.6f}\n ")
-
-        img_dir = os.path.join(self.path, "images")
-        label_dir = os.path.join(self.path, "labels")
-
-        self.images = sorted([img for img in os.listdir(img_dir) if img.endswith(".jpg")])
-
-        self.img_dir = img_dir
-        self.label_dir = label_dir
-
-    def __len__(self):
-        return len(self.images)
-
-    def __getitem__(self, idx):
-        image_name = self.images[idx]
-        label = image_name.replace(".jpg", ".txt")
-
-        image_path = os.path.join(self.img_dir, image_name)
-        label_path = os.path.join(self.label_dir, label)
-
-        image = cv2.imread(image_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        label = []
-
-        with open(label_path, "r") as f:
-            for line in f:
-                label.append([float(x) for x in line.split()])
-
-        if self.transform:
-            image = self.transform(image)
-
-        return image, label
-
-
-if __name__ == '__main__':
-    path = "/Computer Vision/Data/Dataset/Football"
-
-    dataset = FootballConverter(path=path, mode="test", transform=None)
+                        f.write(f"{class_id} {xcent:.6f} {ycent:.6f} {width:.6f} {height:.6f}\n")

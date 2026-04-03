@@ -7,9 +7,9 @@ def get_args():
     parser = argparse.ArgumentParser(description='model arguments')
 
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=4, help='batch size')
+    parser.add_argument('--batch_size', '-b', type=int, default=32, help='batch size')
     parser.add_argument('--num_workers', '-w', type=int, default=4, help='number of workers')
-    parser.add_argument('--img_sz', '-s', type=int, default=640, help='image size')
+    parser.add_argument('--img_sz', '-s', type=int, default=3840, help='image size')
     parser.add_argument('--lr', '-l', type=float, default=5e-4, help='learning rate')
     parser.add_argument('--optimizer', '-o', type=str, default='AdamW', help='Optimizer of model')
     parser.add_argument('--name_folder', '-n', type=str, default='yolo26s_lr0005_opAdamW', help='name of model folder name with arguments')
