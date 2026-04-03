@@ -9,7 +9,7 @@ def get_args():
 
     parser.add_argument('--video_path', type=str, required=True, help='video path')
     parser.add_argument('--model_path', type=str, required=True, help='model path')
-    parser.add_argument('--conf', type=float, default=0.5, help='confidence threshold')
+    parser.add_argument('--conf', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--output_path', type=str, default="output_result.mp4", help='output directory')
 
 
@@ -35,7 +35,26 @@ if __name__ == '__main__':
     out = cv2.VideoWriter(args.output_path, fourcc, fps, (width, height))
 
     for r in result:
-        annotated_frame = r.plot()
-        out.write(annotated_frame)
+        img = r.orig_img
+        boxes = r.boxes
+
+        for bbox in boxes:
+            x1, y1, x2, y2 = map(int, bbox.xyxy[0])
+            cls = int(bbox.cls[0])
+            conf = float(bbox.conf[0])
+
+            if cls == 0:
+                color = (0, 0, 255)
+                label = f"Player {conf:.2f}"
+            else:
+                color = (0, 255, 255)
+                label = f"Ball {conf:.2f}"
+
+            cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
+
+            cv2.putText(img, label, (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+
+        out.write(img)
 
     out.release()
