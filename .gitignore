@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# Mac
+.DS_Store
+
+# Training outputs
+runs/
+trained_model/
+
+# Models
+*.pt
+*.pth
+
+
+football_train/
+football_val/
+football_test/
