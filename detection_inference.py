@@ -7,9 +7,11 @@ from ultralytics import YOLO
 def get_args():
     parser = argparse.ArgumentParser(description='detection inference')
 
-    parser.add_argument('--video_path', type=str, required=True, help='video path')
-    parser.add_argument('--best_model', type=str, required=True, help='model path')
+    parser.add_argument('--video_path', '-p', type=str, required=True, help='video path')
+    parser.add_argument('--best_model', '-m', type=str, required=True, help='model path')
     parser.add_argument('--conf', type=float, default=0.5, help='confidence threshold')
+    parser.add_argument('--batch_size', '-b', type=int, default=1, help='batch size')
+    parser.add_argument('--img_size', '-imsz', type=int, default=640, help='image size')
     parser.add_argument('--output_path', type=str, default="output_result.mp4", help='output directory')
 
 
@@ -23,7 +25,13 @@ if __name__ == '__main__':
 
     model = YOLO(args.best_model)
 
-    result = model.predict(source=args.video_path, stream=True, conf=args.conf, save=False)
+    result = model.predict(source=args.video_path,
+                           stream=True,
+                           save=False,
+                           conf=args.conf,
+                           batch=args.batch_size,
+                           imgsz=args.img_size
+                           )
 
     cap = cv2.VideoCapture(args.video_path)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
