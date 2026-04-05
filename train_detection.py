@@ -16,7 +16,7 @@ def get_args():
     parser.add_argument('--name_folder', '-n', type=str, default='yolo26s_lr1e-3_opAdamW', help='name of model folder name with arguments')
     parser.add_argument('--data_path', '-p', type=str, required=True, help='data path')
     parser.add_argument('--model', '-m', type=str, default='yolo26s_model/yolo26s.pt', help='Original model')
-    parser.add_argument('--resume', '-r', action='store_true', help='resume training')
+    parser.add_argument('--last_model', '-lsm', type=str, help='Last model')
 
     args = parser.parse_args()
 
@@ -28,7 +28,12 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model = YOLO(args.model)
+    if args.last_model is not None:
+        model = YOLO(args.last_model)
+        resume_ret = True
+    else:
+        model = YOLO(args.model)
+        resume_ret = False
 
     model.train(
         data=args.data_path,
@@ -48,7 +53,7 @@ def main():
         workers=args.num_workers,
         seed=42,
         val=True,
-        resume=args.resume
+        resume=resume_ret
     )
 
 

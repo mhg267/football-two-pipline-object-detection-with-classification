@@ -3,8 +3,10 @@ import torch.nn as nn
 import torch
 import os
 
-from torchvision.models import efficientnet_v2_s
-from torchvision import transforms
+from src.classification import efficientnetv2_custom
+from src.classification import classification_dataset
+
+from torchvision.transforms import Resize, ToTensor, RandomHorizontalFlip, ToPILImage, Normalize
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -36,8 +38,7 @@ def get_args():
 
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
     parser.add_argument('--batch_size', '-b', type=int, default=16, help='batch size')
-    parser.add_argument('--orig_model', '-om', type=str, help='orig model path')
-    parser.add_argument('--train_dir', '-trd', type=str, default='efficientnetv2s_trained', help='train dir')
+    parser.add_argument('--trained_dir', '-trd', type=str, default='efficientnetv2s_trained', help='trained folder')
     parser.add_argument('--checkpoint', '-cp', type=str, required=True, help='checkpoint path')
 
 
@@ -54,18 +55,52 @@ if __name__ == '__main__':
     print("Batch size: {}".format(args.batch_size))
     print("------------Hyperparameters------------")
 
-    early_stopping = EarlyStopping(patience=20, min_delta=1e-3)
-    tensorboard_writer = SummaryWriter()
-
+    # Check cuda
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
 
-    model = efficientnet_v2_s().to(device)
+    # Initialize early stopping and tensorboard writer
+    early_stopping = EarlyStopping(patience=20, min_delta=1e-3)
+    tensorboard_writer = SummaryWriter()
 
+    # Model
+    model = efficientnetv2_custom().to(device)
+
+    # Data transform and augmentation
+    train_transforms = transforms.Compose([
+        ToPILImage(),
+        Resize((384, 384)),
+        RandomHorizontalFlip(p=0.5),
+        ToTensor(),
+        Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225])  # ImageNet mean and std
+    ])
+
+    val_transforms = transforms.Compose([
+        ToPILImage(),
+        Resize((384, 384)),
+        ToTensor(),
+        Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]   # ImageNet mean and std
+        )
+    ])
+
+
+
+    if not os .path.exists(args.trained_dir):
+        os.makedirs(args.trained_dir)
+
+    # Check checkpoint
     if not os.path.exists(args.checkpoint):
-        model.load_state_dict(torch.load(args.orig_model))
+        epoch_start = 0
+    else:
+        checkpoint = torch.load(args.checkpoint)
+
+
 
 
 

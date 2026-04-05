@@ -10,8 +10,8 @@ class FootballConverter:
     def __init__(self, path, mode):
         self.path = os.path.join(path, "football_{}".format(mode))
 
-        img_output_folder = os.path.join(self.path, "detection_images")
-        label_output_folder = os.path.join(self.path, "detection_labels")
+        img_output_folder = os.path.join(self.path, "images")
+        label_output_folder = os.path.join(self.path, "labels")
 
         if os.path.exists(img_output_folder):
             shutil.rmtree(img_output_folder)
@@ -22,7 +22,7 @@ class FootballConverter:
 
 
         for folder_name in os.listdir(self.path):
-            if folder_name in ["detection_images", "detection_labels"] or folder_name.startswith("."):
+            if folder_name in ["images", "labels"] or folder_name.startswith("."):
                 continue
 
             video_path = os.path.join(self.path, folder_name, folder_name+".mp4")

@@ -4,9 +4,10 @@ import torch
 
 from torchvision.models import efficientnet_v2_s
 
-
+# jersey number is 21 mean 20 numbers and 1 unknown
+# jersey color is 3 mean 2 colors
 class player_classifier(nn.Module):
-    def __init__(self, n_numbers=20, n_jersey_color=3, orig_model_path=None):
+    def __init__(self, n_jersey_numbers=21, n_jersey_color=2, orig_model_path=None):
         super(player_classifier, self).__init__()
         self.backbone = efficientnet_v2_s()
 
@@ -23,7 +24,7 @@ class player_classifier(nn.Module):
         # Initialize new FC layers
         self.backbone.number_head = nn.Sequential(
             nn.Dropout(p=0.2),
-            nn.Linear(in_features, n_numbers)
+            nn.Linear(in_features, n_jersey_numbers)
         )
 
         self.backbone.color_head = nn.Sequential(

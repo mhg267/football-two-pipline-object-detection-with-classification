@@ -8,8 +8,8 @@ def get_args():
     parser = argparse.ArgumentParser(description='detection inference')
 
     parser.add_argument('--video_path', type=str, required=True, help='video path')
-    parser.add_argument('--model_path', type=str, required=True, help='model path')
-    parser.add_argument('--conf', type=float, default=0.25, help='confidence threshold')
+    parser.add_argument('--best_model', type=str, required=True, help='model path')
+    parser.add_argument('--conf', type=float, default=0.5, help='confidence threshold')
     parser.add_argument('--output_path', type=str, default="output_result.mp4", help='output directory')
 
 
@@ -21,7 +21,7 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
 
-    model = YOLO(args.model_path)
+    model = YOLO(args.best_model)
 
     result = model.predict(source=args.video_path, stream=True, conf=args.conf, save=False)
 
