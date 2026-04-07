@@ -3,6 +3,7 @@ import cv2
 import os
 import json
 import numpy as np
+from sympy.physics.units import degree
 
 from torch.utils.data import Dataset
 from torchvision.transforms import transforms
@@ -86,9 +87,14 @@ class ClassificationDataset(Dataset):
         annotations = all_image_id[idx+1]
         bbox = [annotation["bbox"] for annotation in annotations]
         cropped_image = [image[int(ymin):int(ymin+h), int(xmin):int(xmin+w)] for [xmin, ymin, w, h] in bbox]
-        jersey_num = [int(annotation["attributes"]["jersey_number"]) for annotation in annotations]
-        jersey_color = [self.color_map[annotation["attributes"]["team_jersey_color"]] for annotation in annotations]
+        jersey_num = [
+            int(annotation["attributes"]["jersey_number"])
+            if annotation["attributes"]["number_visible"] in ["visible", "partially_visible"]
+            else 0
+            for annotation in annotations if annotation
+        ]
 
+        jersey_color = [self.color_map[annotation["attributes"]["team_jersey_color"]] for annotation in annotations]
 
         if self.transform:
             cropped_image = [self.transform(image) for image in cropped_image]
@@ -99,30 +105,40 @@ class ClassificationDataset(Dataset):
 
 
 
-if __name__ == '__main__':
-    path = "/Users/minhhung/Documents/Code/Python/Computer Vision/Data/Dataset/Football"
-    dataset = ClassificationDataset(path, mode="train")
-    cropped_image, jersey_num, jersey_color = dataset.__getitem__(1000)
-    print(jersey_num)
-    print(jersey_color)
-
-    # for image, num, color in zip(cropped_image, jersey_num, jersey_color):
-    #     # image đang là numpy RGB
-    #     pil_image = transforms.ToPILImage()(image)
-    #
-    #     transformed_image = transforms.Compose([
-    #         transforms.Resize((384, 384))
-    #
-    #     ])(pil_image)
-    #
-    #     # PIL -> numpy để show bằng cv2
-    #     transformed_np = np.array(transformed_image)
-    #
-    #     # RGB -> BGR để cv2 hiển thị đúng màu
-    #     transformed_np = cv2.cvtColor(transformed_np, cv2.COLOR_RGB2BGR)
-    #
-    #     cv2.imshow(f"{num}_{color}", transformed_np)
-    #     cv2.waitKey(0)
-    #
-    # cv2.destroyAllWindows()
+# if __name__ == '__main__':
+#     path = "/Users/minhhung/Documents/Code/Python/Computer Vision/Data/Dataset/Football"
+#     dataset = ClassificationDataset(path, mode="train")
+#     cropped_image, jersey_num, jersey_color = dataset.__getitem__(10)
+#     print(jersey_num)
+#     print(jersey_color)
+#
+#     for image, num, color in zip(cropped_image, jersey_num, jersey_color):
+#         # image đang là numpy RGB
+#         transformed_image = transforms.Compose([
+#             transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.01),
+#             transforms.RandomAffine(degrees=(-10, 10),
+#                                     translate=(0.1, 0.1),
+#                                     scale=(0.9, 1.1), shear=(-10, 10),
+#                                     interpolation=transforms.InterpolationMode.BILINEAR)
+#         ])
+#         pil_image = transforms.ToPILImage()(image)
+#         pil_image = transformed_image(pil_image)
+#
+#
+#         transformed_image = transforms.Compose([
+#             transforms.Resize((384, 384))
+#
+#
+#         ])(pil_image)
+#
+#         # PIL -> numpy để show bằng cv2
+#         transformed_np = np.array(transformed_image)
+#
+#         # RGB -> BGR để cv2 hiển thị đúng màu
+#         transformed_np = cv2.cvtColor(transformed_np, cv2.COLOR_RGB2BGR)
+#
+#         cv2.imshow(f"{num}_{color}", transformed_np)
+#         cv2.waitKey(0)
+#
+#     cv2.destroyAllWindows()
 

@@ -7,9 +7,9 @@ def get_args():
     parser = argparse.ArgumentParser(description='detection model arguments')
 
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=32, help='batch size')
+    parser.add_argument('--batch_size', '-b', type=int, default=4, help='batch size')
     parser.add_argument('--num_workers', '-w', type=int, default=8, help='number of workers')
-    parser.add_argument('--img_sz', '-s', type=int, default=3840, help='image size')
+    parser.add_argument('--img_sz', '-s', type=int, default=1920, help='image size')
     parser.add_argument('--lr', '-l', type=float, default=1e-3, help='learning rate')
     parser.add_argument('--optimizer', '-o', type=str, default='AdamW', help='Optimizer of model')
     parser.add_argument('--weight_decay', '-wd', type=float, default=1e-5, help='weight decay')
@@ -26,6 +26,15 @@ def get_args():
 def main():
     args = get_args()
 
+    print("---------------------------------------")
+    print("Epochs: {}".format(args.epochs))
+    print("Batch size: {}".format(args.batch_size))
+    print("Number of workers: {}".format(args.num_workers))
+    print("------------Hyperparameters------------")
+    print("Learning rate: {}".format(args.lr))
+    print("Weight decay: {}".format(args.weight_decay))
+    print("---------------------------------------")
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     if args.last_model is not None:
@@ -40,7 +49,7 @@ def main():
         epochs=args.epochs,
         batch=args.batch_size,
         imgsz=args.img_sz,
-        device=device,
+        device=[0, 1],
         project="yolo26s_trained",
         name=args.name_folder,
         save=True,

@@ -1,4 +1,6 @@
 import argparse
+import shutil
+
 import torch.nn as nn
 import torch
 import os
@@ -6,7 +8,7 @@ import os
 from src.classification.efficientnetv2_custom import player_classifier
 from src.classification.classification_dataset import ClassificationDataset
 
-from torchvision.transforms import Resize, ToTensor, RandomHorizontalFlip, ToPILImage, Normalize, Compose, ColorJitter
+from torchvision.transforms import Resize, ToTensor, ToPILImage, Normalize, Compose, ColorJitter, RandomAffine, InterpolationMode
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -53,13 +55,14 @@ def get_args():
     parser = argparse.ArgumentParser('classification model arguments')
 
     parser.add_argument('--data_path', '-p', type=str, required=True, help='path to dataset')
-    parser.add_argument('--num_workers', '-nw', type=int, default=4, help='number of workers')
+    parser.add_argument('--num_workers', '-nw', type=int, default=32, help='number of workers')
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=4, help='batch size')
+    parser.add_argument('--batch_size', '-b', type=int, default=8, help='batch size')
     parser.add_argument('--learning_rate', '-lr', type=float, default=1e-4, help='learning rate')
     parser.add_argument('--weight_decay', '-wd', type=float, default=1e-5, help='weight decay')
     parser.add_argument('--trained_dir', '-trd', type=str, default='efficientnetv2s_trained', help='trained folder')
     parser.add_argument('--checkpoint', '-cp', type=str, default=None, help='checkpoint path')
+    parser.add_argument('--tensorboard_dir', '-td', type=str, default='tensorboard', help='tensorboard folder')
 
     args = parser.parse_args()
 
@@ -88,13 +91,23 @@ if __name__ == '__main__':
 
     # Initialize early stopping and tensorboard writer
     early_stopping = EarlyStopping(patience=20, min_delta=1e-3)
-    tensorboard_writer = SummaryWriter()
+
+    if os.path.exists(args.tensorboard_dir):
+        shutil.rmtree(args.tensorboard_dir)
+    os.makedirs(args.tensorboard_dir)
+
+    tensorboard_writer = SummaryWriter(log_dir=args.tensorboard_dir)
 
     # Data transform and augmentation
     train_transforms = Compose([
         ToPILImage(),
         Resize((384, 384)),
-        RandomHorizontalFlip(p=0.5),
+        ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.01),
+        RandomAffine(degrees=(-10, 10),
+                                translate=(0.1, 0.1),
+                                scale=(0.9, 1.1),
+                                shear=(-10, 10),
+                                interpolation=InterpolationMode.BILINEAR),
         ToTensor(),
         Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -204,7 +217,6 @@ if __name__ == '__main__':
 
             train_jersey_n_outputs.extend(jersey_n_pred.cpu().tolist())
             train_jersey_c_outputs.extend(jersey_c_pred.cpu().tolist())
-
 
             # Loss
             jersey_n_loss = criterion(jersey_n_output, jersey_numbers)
