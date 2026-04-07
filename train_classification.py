@@ -55,11 +55,11 @@ def get_args():
     parser = argparse.ArgumentParser('classification model arguments')
 
     parser.add_argument('--data_path', '-p', type=str, required=True, help='path to dataset')
-    parser.add_argument('--num_workers', '-nw', type=int, default=12, help='number of workers')
+    parser.add_argument('--num_workers', '-nw', type=int, default=24, help='number of workers')
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=16, help='batch size')
+    parser.add_argument('--batch_size', '-b', type=int, default=24, help='batch size')
     parser.add_argument('--learning_rate', '-lr', type=float, default=1e-4, help='learning rate')
-    parser.add_argument('--weight_decay', '-wd', type=float, default=1e-5, help='weight decay')
+    parser.add_argument('--weight_decay', '-wd', type=float, default=3e-4, help='weight decay')
     parser.add_argument('--trained_dir', '-trd', type=str, default='efficientnetv2s_trained', help='trained folder')
     parser.add_argument('--checkpoint', '-cp', type=str, default=None, help='checkpoint path')
     parser.add_argument('--tensorboard_dir', '-td', type=str, default='tensorboard', help='tensorboard folder')
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # Load Dataset
     val_transforms = Compose([
         ToPILImage(),
-        Resize((384, 384)),
+        Resize((224, 224)),
         ToTensor(),
         Normalize(
             mean=[0.485, 0.456, 0.406],
@@ -208,7 +208,7 @@ if __name__ == '__main__':
         train_progress_bar = tqdm(train_loader)
 
         for iter, (images, jersey_numbers, jersey_colors) in enumerate(train_progress_bar):
-            images, jersey_numbers, jersey_colors = images.to(device), jersey_numbers.to(device), jersey_colors.to(device)
+            images, jersey_numbers, jersey_colors = images.to(device, non_blocking=True), jersey_numbers.to(device, non_blocking=True), jersey_colors.to(device, non_blocking=True)
 
             train_jersey_n_labels.extend(jersey_numbers.cpu().tolist())
             train_jersey_c_labels.extend(jersey_colors.cpu().tolist())
@@ -227,7 +227,7 @@ if __name__ == '__main__':
             # Loss
             jersey_n_loss = criterion(jersey_n_output, jersey_numbers)
             jersey_c_loss = criterion(jersey_c_output, jersey_colors)
-            train_total_loss = 3.0 * jersey_n_loss + 0.3 *jersey_c_loss
+            train_total_loss = 3.0 * jersey_n_loss + 0.3 * jersey_c_loss
 
             train_loss_sum += train_total_loss.item() * jersey_numbers.size(0)
             train_sample_sum += jersey_numbers.size(0)
@@ -275,7 +275,7 @@ if __name__ == '__main__':
         val_progress_bar = tqdm(val_loader)
 
         for iter, (images, jersey_numbers, jersey_colors) in enumerate(val_progress_bar):
-            images, jersey_numbers, jersey_colors = images.to(device), jersey_numbers.to(device), jersey_colors.to(device)
+            images, jersey_numbers, jersey_colors = images.to(device, non_blocking=True), jersey_numbers.to(device, non_blocking=True), jersey_colors.to(device, non_blocking=True)
 
             val_jersey_n_labels.extend(jersey_numbers.cpu().tolist())
             val_jersey_c_labels.extend(jersey_colors.cpu().tolist())
