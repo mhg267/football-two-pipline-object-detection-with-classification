@@ -55,7 +55,7 @@ def get_args():
     parser = argparse.ArgumentParser('classification model arguments')
 
     parser.add_argument('--data_path', '-p', type=str, required=True, help='path to dataset')
-    parser.add_argument('--num_workers', '-nw', type=int, default=24, help='number of workers')
+    parser.add_argument('--num_workers', '-nw', type=int, default=12, help='number of workers')
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
     parser.add_argument('--batch_size', '-b', type=int, default=24, help='batch size')
     parser.add_argument('--learning_rate', '-lr', type=float, default=1e-4, help='learning rate')
@@ -227,7 +227,7 @@ if __name__ == '__main__':
             # Loss
             jersey_n_loss = criterion(jersey_n_output, jersey_numbers)
             jersey_c_loss = criterion(jersey_c_output, jersey_colors)
-            train_total_loss = 3.0 * jersey_n_loss + 0.3 * jersey_c_loss
+            train_total_loss = 2.0 * jersey_n_loss + 0.5 * jersey_c_loss
 
             train_loss_sum += train_total_loss.item() * jersey_numbers.size(0)
             train_sample_sum += jersey_numbers.size(0)
@@ -294,7 +294,7 @@ if __name__ == '__main__':
                 # Validation loss
                 jersey_n_loss = criterion(jersey_n_output, jersey_numbers)
                 jersey_c_loss = criterion(jersey_c_output, jersey_colors)
-                val_total_loss = jersey_n_loss + jersey_c_loss
+                val_total_loss = 2.0 * jersey_n_loss + 0.5 * jersey_c_loss
 
                 val_loss_sum += val_total_loss.item() * jersey_numbers.size(0)
                 val_sample_sum += jersey_numbers.size(0)
