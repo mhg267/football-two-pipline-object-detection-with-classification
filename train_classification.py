@@ -90,11 +90,14 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     # Initialize early stopping and tensorboard writer
-    early_stopping = EarlyStopping(patience=20, min_delta=1e-3)
+    early_stopping = EarlyStopping(patience=10, min_delta=1e-3)
 
-    if os.path.exists(args.tensorboard_dir):
-        shutil.rmtree(args.tensorboard_dir)
-    os.makedirs(args.tensorboard_dir)
+    if args.checkpoint is None:
+        if os.path.exists(args.tensorboard_dir):
+            shutil.rmtree(args.tensorboard_dir)
+
+    if not os.path.exists(args.tensorboard_dir):
+        os.makedirs(args.tensorboard_dir)
 
     tensorboard_writer = SummaryWriter(log_dir=args.tensorboard_dir)
 
@@ -171,17 +174,15 @@ if __name__ == '__main__':
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
 
-    # Use multi-gpu
-    if torch.cuda.device_count() > 1:
-        print(f"Using {torch.cuda.device_count()} GPUs")
-        model = nn.DataParallel(model)
-
-    model = model.to(device)
-
-    # Check checkpoint
+    # Check checkpoint, we need load checkpoint before DataParallel
     if args.checkpoint is None:
         epoch_start = 0
         best_loss = float("inf")
+        if os.path.exists(f"{args.trained_dir}/last.pt"):
+            os.remove(f"{args.trained_dir}/last.pt")
+        if os.path.exists(f"{args.trained_dir}/best.pt"):
+            os.remove(f"{args.trained_dir}/best.pt")
+
     else:
         checkpoint = torch.load(args.checkpoint, map_location=device)
         epoch_start = checkpoint["epoch"]
@@ -190,6 +191,13 @@ if __name__ == '__main__':
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
         print("Loaded checkpoint from epoch {}".format(epoch_start))
+
+    # Use multi-gpu
+    if torch.cuda.device_count() > 1:
+        print(f"Using {torch.cuda.device_count()} GPUs")
+        model = nn.DataParallel(model)
+
+    model = model.to(device)
 
     # iter size
     train_iter_size = len(train_loader)

@@ -113,8 +113,7 @@ if __name__ == '__main__':
     print(jersey_color)
 
     for image, num, color in zip(cropped_image, jersey_num, jersey_color):
-        # image đang là numpy RGB
-        print(image.dtype)
+
         transformed_image = transforms.Compose([
             transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.01),
             transforms.RandomAffine(degrees=(-10, 10),
@@ -133,8 +132,8 @@ if __name__ == '__main__':
 
         transformed_np = cv2.cvtColor(transformed_np, cv2.COLOR_RGB2BGR)
 
-    #     cv2.imshow(f"{num}_{color}", transformed_np)
-    #     cv2.waitKey(0)
-    #
-    # cv2.destroyAllWindows()
+        cv2.imshow(f"{num}_{color}", transformed_np)
+        cv2.waitKey(0)
+
+    cv2.destroyAllWindows()
 
