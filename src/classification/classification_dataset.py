@@ -3,7 +3,6 @@ import cv2
 import os
 import json
 import numpy as np
-from sympy.physics.units import degree
 
 from torch.utils.data import Dataset
 from torchvision.transforms import transforms
@@ -89,7 +88,7 @@ class ClassificationDataset(Dataset):
         cropped_image = [image[int(ymin):int(ymin+h), int(xmin):int(xmin+w)] for [xmin, ymin, w, h] in bbox]
         jersey_num = [
             int(annotation["attributes"]["jersey_number"])
-            if annotation["attributes"]["number_visible"] in ["visible", "partially_visible"]
+            if annotation["attributes"]["number_visible"] in ["visible"]
             else 0
             for annotation in annotations if annotation
         ]

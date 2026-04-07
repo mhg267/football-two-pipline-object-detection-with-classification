@@ -5,7 +5,7 @@ import torch
 from torchvision.models import efficientnet_v2_s
 
 # jersey number is 21 mean 20 numbers and 1 unknown
-# jersey color is 3 mean 2 colors
+# jersey color is 2 mean 2 colors
 class player_classifier(nn.Module):
     def __init__(self, n_jersey_numbers=21, n_jersey_color=2, orig_model_path=None):
         super(player_classifier, self).__init__()
@@ -42,4 +42,8 @@ class player_classifier(nn.Module):
         x2 = self.backbone.color_head(x)
 
         return x1, x2
+
+if __name__ == '__main__':
+    model = player_classifier(n_jersey_numbers=21, n_jersey_color=2)
+    print(model.backbone.features)
 

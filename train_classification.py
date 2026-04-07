@@ -235,7 +235,7 @@ if __name__ == '__main__':
             # Loss
             jersey_n_loss = criterion(jersey_n_output, jersey_numbers)
             jersey_c_loss = criterion(jersey_c_output, jersey_colors)
-            train_total_loss = 2.0 * jersey_n_loss + 0.5 * jersey_c_loss
+            train_total_loss = jersey_n_loss + jersey_c_loss
 
             train_loss_sum += train_total_loss.item() * jersey_numbers.size(0)
             train_sample_sum += jersey_numbers.size(0)
@@ -253,13 +253,14 @@ if __name__ == '__main__':
             train_step = epoch * train_iter_size + iter
 
             train_progress_bar.set_description(
-                f"Traning ||"
-                f"Epoch {epoch + 1}/{args.epochs} || "
-                f"Iter {iter + 1}/{train_iter_size} || "
-                f"Loss: {train_total_loss.item():.4f} || "
-                f"Jersey_n acc: {train_jersey_n_acc:.4f} || "
-                f"Jersey_c acc: {train_jersey_c_acc:.4f}"
+                f"Epoch {epoch + 1}/{args.epochs}"
             )
+
+            train_progress_bar.set_postfix({
+                "loss": f"{train_total_loss.item():.4f}",
+                "n_acc": f"{train_jersey_n_acc:.4f}",
+                "c_acc": f"{train_jersey_c_acc:.4f}"
+            })
 
             tensorboard_writer.add_scalar("loss/train_iter", train_total_loss.item(), train_step)
             tensorboard_writer.add_scalar("jersey_n_acc/train_iter", train_jersey_n_acc, train_step)
@@ -302,7 +303,7 @@ if __name__ == '__main__':
                 # Validation loss
                 jersey_n_loss = criterion(jersey_n_output, jersey_numbers)
                 jersey_c_loss = criterion(jersey_c_output, jersey_colors)
-                val_total_loss = 2.0 * jersey_n_loss + 0.5 * jersey_c_loss
+                val_total_loss = jersey_n_loss + jersey_c_loss
 
                 val_loss_sum += val_total_loss.item() * jersey_numbers.size(0)
                 val_sample_sum += jersey_numbers.size(0)
@@ -314,18 +315,20 @@ if __name__ == '__main__':
                 # Print and tensorboard writer
                 val_step = epoch * val_iter_size + iter
 
-                val_progress_bar.set_description(
-                    f"Validation ||"
-                    f"Loss: {val_total_loss.item():.4f} || "
-                    f"Jersey_n acc: {val_jersey_n_acc:.4f} || "
-                    f"Jersey_c acc: {val_jersey_c_acc:.4f}"
-                )
+                val_progress_bar.set_description(f"Validation {epoch + 1}/{args.epochs}")
+
+                val_progress_bar.set_postfix({
+                    "loss": f"{val_total_loss.item():.4f}",
+                    "n_acc": f"{val_jersey_n_acc:.4f}",
+                    "c_acc": f"{val_jersey_c_acc:.4f}"
+                })
 
                 tensorboard_writer.add_scalar("loss/val_iter", val_total_loss.item(), val_step)
                 tensorboard_writer.add_scalar("jersey_n_acc/val_iter", val_jersey_n_acc, val_step)
                 tensorboard_writer.add_scalar("jersey_c_acc/val_iter", val_jersey_c_acc, val_step)
 
         avg_val_loss = val_loss_sum / val_sample_sum
+        print(f"Average validation loss: {avg_val_loss:.4f}")
 
         tensorboard_writer.add_scalar("loss/val_epoch", avg_val_loss, epoch + 1)
         tensorboard_writer.add_scalar("jersey_n_acc/val_epoch", val_jersey_n_acc, epoch + 1)
