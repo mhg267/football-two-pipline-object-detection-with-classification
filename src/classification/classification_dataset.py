@@ -31,6 +31,11 @@ class ClassificationDataset(Dataset):
 
         unsual_files = ['.DS_Store', 'images', 'labels']
 
+        self.color_map = {
+            'white': 0,
+            'black': 1
+        }
+
         for folder in self.match_files:
             if folder not in unsual_files:
 
@@ -43,11 +48,6 @@ class ClassificationDataset(Dataset):
                 self.end_idx += len(json_data["images"])
                 self.image_idx[folder] = [self.start_idx, self.end_idx-1]
                 self.start_idx = self.end_idx
-
-            self.color_map = {
-                'white': 0,
-                'black': 1
-            }
 
 
 
