@@ -107,24 +107,31 @@ class ClassificationDataset(Dataset):
 if __name__ == '__main__':
     path = "/Users/minhhung/Documents/Code/Python/Computer Vision/Data/Dataset/Football"
     dataset = ClassificationDataset(path, mode="train")
-    cropped_image, jersey_num, jersey_color = dataset.__getitem__(10)
+    cropped_image, jersey_num, jersey_color = dataset.__getitem__(200)
     print(jersey_num)
     print(jersey_color)
 
     for image, num, color in zip(cropped_image, jersey_num, jersey_color):
 
+
         transformed_image = transforms.Compose([
-            transforms.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.01),
-            transforms.RandomAffine(degrees=(-10, 10),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.01),
+            transforms.RandomAffine(degrees=15,
                                     translate=(0.1, 0.1),
-                                    scale=(0.9, 1.1), shear=(-10, 10),
-                                    interpolation=transforms.InterpolationMode.BILINEAR)
+                                    scale=(0.85, 1.15),
+                                    shear=5,
+                                    interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))
+
         ])
         pil_image = transforms.ToPILImage()(image)
         pil_image = transformed_image(pil_image)
 
+
+
         transformed_image = transforms.Compose([
             transforms.Resize((224, 224))
+
         ])(pil_image)
 
         transformed_np = np.array(transformed_image)

@@ -8,7 +8,7 @@ import json
 from src.classification.efficientnetv2_custom import player_classifier
 from src.classification.classification_dataset import ClassificationDataset
 
-from torchvision.transforms import Resize, ToTensor, ToPILImage, Normalize, Compose, ColorJitter, RandomAffine, InterpolationMode
+from torchvision.transforms import Resize, ToTensor, ToPILImage, Normalize, Compose, ColorJitter, RandomAffine, InterpolationMode, GaussianBlur, RandomErasing
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -17,7 +17,7 @@ from collections import Counter
 
 
 class EarlyStopping:
-    def __init__(self, patience=20, min_delta=1e-3):
+    def __init__(self, patience=5, min_delta=1e-3):
         self.patience = patience
         self.min_delta = min_delta
         self.best_loss = None
@@ -56,10 +56,10 @@ def get_args():
     parser = argparse.ArgumentParser('classification model arguments')
 
     parser.add_argument('--data_path', '-p', type=str, required=True, help='path to dataset')
-    parser.add_argument('--num_workers', '-nw', type=int, default=12, help='number of workers')
+    parser.add_argument('--num_workers', '-nw', type=int, default=8, help='number of workers')
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=24, help='batch size')
-    parser.add_argument('--learning_rate', '-lr', type=float, default=1e-4, help='learning rate')
+    parser.add_argument('--batch_size', '-b', type=int, default=16, help='batch size')
+    parser.add_argument('--learning_rate', '-lr', type=float, default=5e-5, help='learning rate')
     parser.add_argument('--weight_decay', '-wd', type=float, default=3e-4, help='weight decay')
     parser.add_argument('--trained_dir', '-trd', type=str, default='efficientnetv2s_trained', help='trained folder')
     parser.add_argument('--checkpoint', '-cp', type=str, default=None, help='checkpoint path')
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     # Initialize early stopping and tensorboard writer
-    early_stopping = EarlyStopping(patience=10, min_delta=1e-3)
+    early_stopping = EarlyStopping(patience=5, min_delta=1e-3)
 
     if args.checkpoint is None:
         if os.path.exists(args.tensorboard_dir):
@@ -106,16 +106,16 @@ if __name__ == '__main__':
     train_transforms = Compose([
         ToPILImage(),
         Resize((224, 224)),
-        ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.01),
-        RandomAffine(degrees=(-10, 10),
-                                translate=(0.1, 0.1),
+        ColorJitter(brightness=0.15, contrast=0.15, saturation=0.15, hue=0.01),
+        RandomAffine(degrees=5,
+                                translate=(0.05, 0.05),
                                 scale=(0.9, 1.1),
-                                shear=(-10, 10),
+                                shear=5,
                                 interpolation=InterpolationMode.BILINEAR),
         ToTensor(),
         Normalize(
             mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225])  # ImageNet mean and std
+            std=[0.229, 0.224, 0.225]) # ImageNet mean and std
     ])
 
     # Load Dataset
@@ -196,17 +196,16 @@ if __name__ == '__main__':
     total = sum(counter.values())
 
     weight = [
-        0.0 if counter.get(i, 0) == 0 else (total / num_classes) / counter[i]
+        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.5
         for i in range(num_classes)
     ]
 
-    weight[0] *= 0.3
     weight = torch.tensor(weight, dtype=torch.float, device=device)
     ########################################
 
     # Initialize model, optimizer, loss, scheduler
     model = player_classifier().to(device)
-    criterion_n = nn.CrossEntropyLoss(weight=weight)
+    criterion_n = nn.CrossEntropyLoss(weight=weight, label_smoothing=0.05)
     criterion_c = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
@@ -272,7 +271,7 @@ if __name__ == '__main__':
             # Loss
             jersey_n_loss = criterion_n(jersey_n_output, jersey_numbers)
             jersey_c_loss = criterion_c(jersey_c_output, jersey_colors)
-            train_total_loss = jersey_n_loss + 0.2 * jersey_c_loss
+            train_total_loss = jersey_n_loss + 0.05 * jersey_c_loss
 
             train_loss_sum += train_total_loss.item() * jersey_numbers.size(0)
             train_sample_sum += jersey_numbers.size(0)
@@ -340,7 +339,7 @@ if __name__ == '__main__':
                 # Validation loss
                 jersey_n_loss = criterion_n(jersey_n_output, jersey_numbers)
                 jersey_c_loss = criterion_c(jersey_c_output, jersey_colors)
-                val_total_loss = jersey_n_loss + 0.2 *jersey_c_loss
+                val_total_loss = jersey_n_loss + 0.05 *jersey_c_loss
 
                 val_loss_sum += val_total_loss.item() * jersey_numbers.size(0)
                 val_sample_sum += jersey_numbers.size(0)
@@ -402,12 +401,12 @@ if __name__ == '__main__':
 
         torch.save(checkpoint, f"{args.trained_dir}/last.pt")
 
-        if (epoch + 1) % 5 == 0:
-            print("Classification report of jersey_n")
-            print(classification_report(val_jersey_n_labels, val_jersey_n_outputs))
 
-            print("Classification report of jersey_c")
-            print(classification_report(val_jersey_c_labels, val_jersey_c_outputs))
+        print("Classification report of jersey_n")
+        print(classification_report(val_jersey_n_labels, val_jersey_n_outputs))
+
+        print("Classification report of jersey_c")
+        print(classification_report(val_jersey_c_labels, val_jersey_c_outputs))
 
         early_stopping(avg_val_loss)
         if early_stopping.early_stop:
