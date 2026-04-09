@@ -12,7 +12,9 @@ from torchvision.transforms import Resize, ToTensor, ToPILImage, Normalize, Comp
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 from collections import Counter
 
 
@@ -51,6 +53,19 @@ def collate_fn(batch):
     jersey_colors = torch.tensor(jersey_colors, dtype=torch.long)
 
     return images, jersey_nums, jersey_colors
+
+def plot_confusion_matrix(y_true, y_pred, num_classes=21):
+    cm = confusion_matrix(y_true, y_pred, labels=list(range(num_classes)))
+    cm = cm.astype("float") / (cm.sum(axis=1, keepdims=True) + 1e-6)
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+    sns.heatmap(cm, annot=False, cmap="Blues", ax=ax)
+
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("True")
+    ax.set_title("Normalized Confusion Matrix")
+
+    return fig
 
 def get_args():
     parser = argparse.ArgumentParser('classification model arguments')
@@ -196,16 +211,17 @@ if __name__ == '__main__':
     total = sum(counter.values())
 
     weight = [
-        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.5
+        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.7
         for i in range(num_classes)
     ]
+    weight[0] *= 0.9
 
     weight = torch.tensor(weight, dtype=torch.float, device=device)
     ########################################
 
     # Initialize model, optimizer, loss, scheduler
     model = player_classifier().to(device)
-    criterion_n = nn.CrossEntropyLoss(weight=weight, label_smoothing=0.05)
+    criterion_n = nn.CrossEntropyLoss(weight=weight, label_smoothing=0.02)
     criterion_c = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=3, factor=0.5)
@@ -249,7 +265,7 @@ if __name__ == '__main__':
         train_loss_sum = 0.0
         train_sample_sum = 0
 
-        train_progress_bar = tqdm(train_loader)
+        train_progress_bar = tqdm(train_loader, colour="red", desc="Training")
 
         for iter, (images, jersey_numbers, jersey_colors) in enumerate(train_progress_bar):
             images, jersey_numbers, jersey_colors = images.to(device, non_blocking=True), jersey_numbers.to(device, non_blocking=True), jersey_colors.to(device, non_blocking=True)
@@ -317,7 +333,7 @@ if __name__ == '__main__':
         val_loss_sum = 0.0
         val_sample_sum = 0
 
-        val_progress_bar = tqdm(val_loader)
+        val_progress_bar = tqdm(val_loader, desc="Validation")
 
         for iter, (images, jersey_numbers, jersey_colors) in enumerate(val_progress_bar):
             images, jersey_numbers, jersey_colors = images.to(device, non_blocking=True), jersey_numbers.to(device, non_blocking=True), jersey_colors.to(device, non_blocking=True)
@@ -403,10 +419,24 @@ if __name__ == '__main__':
 
 
         print("Classification report of jersey_n")
-        print(classification_report(val_jersey_n_labels, val_jersey_n_outputs))
+        print(classification_report(val_jersey_n_labels, val_jersey_n_outputs, zero_division=0))
 
         print("Classification report of jersey_c")
         print(classification_report(val_jersey_c_labels, val_jersey_c_outputs))
+
+        fig = plot_confusion_matrix(
+            val_jersey_n_labels,
+            val_jersey_n_outputs,
+            num_classes=21
+        )
+
+        tensorboard_writer.add_figure(
+            "Confusion Matrix / Jersey Number",
+            fig,
+            global_step=epoch + 1
+        )
+
+        plt.close(fig)
 
         early_stopping(avg_val_loss)
         if early_stopping.early_stop:
