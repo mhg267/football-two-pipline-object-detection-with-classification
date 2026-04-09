@@ -211,17 +211,17 @@ if __name__ == '__main__':
     total = sum(counter.values())
 
     weight = [
-        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.7
+        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.8
         for i in range(num_classes)
     ]
-    weight[0] *= 0.85
+    weight[0] *= 0.80
 
     weight = torch.tensor(weight, dtype=torch.float, device=device)
     ########################################
 
     # Initialize model, optimizer, loss, scheduler
     model = player_classifier().to(device)
-    criterion_n = nn.CrossEntropyLoss(weight=weight, label_smoothing=0.02)
+    criterion_n = nn.CrossEntropyLoss(weight=weight, label_smoothing=0.01)
     criterion_c = nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -423,7 +423,7 @@ if __name__ == '__main__':
 
 
         print("Classification report of jersey_n")
-        print(classification_report(val_jersey_n_labels, val_jersey_n_outputs, zero_division=0))
+        print(classification_report(val_jersey_n_labels, val_jersey_n_outputs, zero_division=0, labels=list(range(21))))
 
         print("Classification report of jersey_c")
         print(classification_report(val_jersey_c_labels, val_jersey_c_outputs))
