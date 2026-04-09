@@ -211,10 +211,15 @@ if __name__ == '__main__':
     total = sum(counter.values())
 
     weight = [
-        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.75
+        0.0 if counter.get(i, 0) == 0 else ((total / num_classes) / counter[i]) ** 0.8
         for i in range(num_classes)
     ]
-    weight[0] *= 0.80
+    weight[0] *= 0.75
+    weight[4] *=1.5
+    weight[11] *=1.5
+    weight[10] *=1.2
+    weight[12] *= 1.5
+    weight[13] *=1.5
 
     weight = torch.tensor(weight, dtype=torch.float, device=device)
     ########################################
