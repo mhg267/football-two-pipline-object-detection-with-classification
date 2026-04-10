@@ -31,7 +31,7 @@ class EarlyStopping:
             self.best_acc = val_jersey_n_acc
             return
 
-        if val_jersey_n_acc > self.best_acc - self.min_delta:
+        if val_jersey_n_acc > self.best_acc + self.min_delta:
             self.best_acc = val_jersey_n_acc
             self.counter = 0
         else:
@@ -75,7 +75,7 @@ def get_args():
     parser.add_argument('--epochs', '-e', type=int, default=200, help='number of epochs')
     parser.add_argument('--batch_size', '-b', type=int, default=16, help='batch size')
     parser.add_argument('--learning_rate', '-lr', type=float, default=1e-4, help='learning rate')
-    parser.add_argument('--weight_decay', '-wd', type=float, default=1e-3, help='weight decay')
+    parser.add_argument('--weight_decay', '-wd', type=float, default=2e-3, help='weight decay')
     parser.add_argument('--trained_dir', '-trd', type=str, default='efficientnetv2s_trained', help='trained folder')
     parser.add_argument('--checkpoint', '-cp', type=str, default=None, help='checkpoint path')
     parser.add_argument('--tensorboard_dir', '-td', type=str, default='tensorboard', help='tensorboard folder')
@@ -95,7 +95,8 @@ if __name__ == '__main__':
     print("Batch size: {}".format(args.batch_size))
     print("Number of workers: {}".format(args.num_workers))
     print("------------Hyperparameters------------")
-    print("Learning rate: {}".format(args.learning_rate))
+    print("Learning rate of 3 heads: {}".format(args.learning_rate))
+    print("Learning rate of backbone: {}".format(1e-5))
     print("Weight decay: {}".format(args.weight_decay))
     print("---------------------------------------")
 
@@ -181,16 +182,17 @@ if __name__ == '__main__':
         prefetch_factor=2
     )
 
-    ### Counter weight for visible ###
-    counter = Counter()
+    ### Counter weight for visible and num ###
     train_root = os.path.join(args.data_path, "football_train")
+
+    visible_counter = Counter()
+    number_counter = Counter()
 
     for folder in sorted(os.listdir(train_root)):
         if folder in ['.DS_Store', 'images', 'labels']:
             continue
 
-        folder_path = os.path.join(train_root, folder)
-        json_path = os.path.join(folder_path, folder + ".json")
+        json_path = os.path.join(train_root, folder, folder + ".json")
 
         with open(json_path, "r") as f:
             annotations = json.load(f)['annotations']
@@ -198,12 +200,35 @@ if __name__ == '__main__':
         for ann in annotations:
             if ann['category_id'] != 4:
                 continue
-            vis = 1 if ann["attributes"]["number_visible"] == "visible" else 0
-            counter.update([vis])
 
-    total_visible = sum(counter.values())
-    visible_weight = torch.tensor([((total_visible / 2) / counter[i]) for i in range(2)], dtype=torch.float, device=device)
+            is_visible = 1 if ann["attributes"]["number_visible"] == "visible" else 0
+            visible_counter.update([is_visible])
+
+            if is_visible:
+                jersey_num = int(ann["attributes"]["jersey_number"]) - 1
+                number_counter.update([jersey_num])
+
+    # visible weight
+    total_visible = sum(visible_counter.values())
+    visible_weight = torch.tensor(
+        [((total_visible / 2) / visible_counter[i]) for i in range(2)],
+        dtype=torch.float,
+        device=device
+    )
     visible_weight = visible_weight / visible_weight.mean()
+
+    # jersey number weight
+    num_classes = 20
+    total_num = sum(number_counter.values())
+    jersey_n_weight = torch.tensor(
+        [((total_num / num_classes) / number_counter[i]) if number_counter[i] > 0 else 0.0
+         for i in range(num_classes)],
+        dtype=torch.float,
+        device=device
+    )
+
+    valid_mask = jersey_n_weight > 0
+    jersey_n_weight[valid_mask] = jersey_n_weight[valid_mask] / jersey_n_weight[valid_mask].mean()
     ###################################
 
     if not os.path.exists(args.trained_dir):
@@ -211,7 +236,7 @@ if __name__ == '__main__':
 
     # Initialize model, optimizer, loss, scheduler
     model = player_classifier().to(device)
-    criterion_n = nn.CrossEntropyLoss()
+    criterion_n = nn.CrossEntropyLoss(weight=jersey_n_weight)
     criterion_c = nn.CrossEntropyLoss()
     criterion_visible = nn.CrossEntropyLoss(weight=visible_weight)
     optimizer = torch.optim.AdamW([
