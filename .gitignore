@@ -16,10 +16,13 @@ yolo26s_trained/
 efficientnetv2s_model/
 efficientnetv2s_trained/
 
+result_video.mp4
+
 # Models
 *.pt
 *.pth
 *.yaml
+*.zip
 !example_yaml.yaml
 
 

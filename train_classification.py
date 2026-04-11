@@ -8,7 +8,7 @@ import json
 from src.classification.efficientnetv2_custom import player_classifier
 from src.classification.classification_dataset import ClassificationDataset
 
-from torchvision.transforms import Resize, ToTensor, ToPILImage, Normalize, Compose, ColorJitter, RandomAffine, InterpolationMode
+from torchvision.transforms import Resize, ToTensor, ToPILImage, Normalize, Compose, ColorJitter, RandomAffine, InterpolationMode, RandomErasing, RandomPerspective
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -107,7 +107,7 @@ if __name__ == '__main__':
         device = torch.device("cpu")
 
     # Initialize early stopping and tensorboard writer
-    early_stopping = EarlyStopping(patience=7, min_delta=1e-3)
+    early_stopping = EarlyStopping(patience=3, min_delta=1e-3)
 
     if args.checkpoint is None:
         if os.path.exists(args.tensorboard_dir):
@@ -122,16 +122,21 @@ if __name__ == '__main__':
     train_transforms = Compose([
         ToPILImage(),
         Resize((224, 224)),
-        ColorJitter(brightness=0.15, contrast=0.15, saturation=0.15, hue=0.01),
-        RandomAffine(degrees=10,
-                                translate=(0.1, 0.1),
-                                scale=(0.85, 1.15),
-                                shear=5,
-                                interpolation=InterpolationMode.BILINEAR),
+        ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.01),
+        RandomAffine(
+            degrees=12,
+            translate=(0.12, 0.12),
+            scale=(0.8, 1.2),
+            shear=8,
+            interpolation=InterpolationMode.BILINEAR
+        ),
+        RandomPerspective(distortion_scale=0.2, p=0.3),
         ToTensor(),
+        RandomErasing(p=0.25, scale=(0.02, 0.12), ratio=(0.3, 3.3)),
         Normalize(
             mean=[0.485, 0.456, 0.406],
-            std=[0.229, 0.224, 0.225]) # ImageNet mean and std
+            std=[0.229, 0.224, 0.225]   # ImageNet mean and std
+        )
     ])
 
     # Load Dataset
@@ -236,7 +241,7 @@ if __name__ == '__main__':
 
     # Initialize model, optimizer, loss, scheduler
     model = player_classifier().to(device)
-    criterion_n = nn.CrossEntropyLoss(weight=jersey_n_weight)
+    criterion_n = nn.CrossEntropyLoss(weight=jersey_n_weight, label_smoothing=0.1)
     criterion_c = nn.CrossEntropyLoss()
     criterion_visible = nn.CrossEntropyLoss(weight=visible_weight)
     optimizer = torch.optim.AdamW([

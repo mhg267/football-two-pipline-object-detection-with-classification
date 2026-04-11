@@ -177,13 +177,13 @@ if __name__ == '__main__':
                     color = (0, 0, 0)
 
                 if result['jersey_visible_id'] == 1:
-                    label = f"{team}-{number}-{result['conf']:.2}-status: {status}"
+                    label = f"{team} | {number} | {result['conf']:.2f} | status: {status}"
                 else:
-                    label = f"{team}-{result['conf']}-status: invisible"
+                    label = f"{team} | {result['conf']:.2f} | status: invisible"
 
             else:
                 color = (0, 255, 255)
-                label = f"Ball-{result['conf']:.2}"
+                label = f"Ball | {result['conf']:.2f}"
 
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 

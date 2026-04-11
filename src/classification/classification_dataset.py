@@ -107,10 +107,11 @@ class ClassificationDataset(Dataset):
 
 
 
+
 if __name__ == '__main__':
     path = "/Users/minhhung/Documents/Code/Python/Computer Vision/Data/Dataset/Football"
     dataset = ClassificationDataset(path, mode="train")
-    cropped_image, jersey_num, jersey_color, visible = dataset.__getitem__(200)
+    cropped_image, jersey_num, jersey_color, visible = dataset.__getitem__(100)
     print(jersey_num)
     print(jersey_color)
     print(visible)
