@@ -241,7 +241,8 @@ python model_inference.py \
 
 **Output format per player:**
 ```
-team_name | jersey_number | confidence | status: visible/invisible
+jersey_number | confidence | status: visible/invisible
+team is the color of bounding box
 ```
 
 ---
